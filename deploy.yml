@@ -1,0 +1,13 @@
+services:
+  derive:
+    build: .
+    image: derive
+    container_name: derive
+    ports:
+      - "${PORT}:3000"
+    volumes:
+      - data:/app/data
+    restart: unless-stopped
+
+volumes:
+  data:

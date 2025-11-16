@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Session Test</title>
+
+
+    <style>
+        html,
+        body {
+            background-color: #222;
+            color: #ddd;
+        }
+
+        input,
+        button {
+            background-color: #555;
+            color: #ddd;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 0.3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Backend Test</h1>
+
+    <form id="loginForm">
+        <input type="email" class="email" placeholder="email" value="admin@tetimiki.hu">
+        <input type="password" class="password" placeholder="Password" value="Sorelle">
+        <button type="submit">Login</button>
+    </form>
+
+    <br>
+    <button id="user">Check user info</button>
+
+    <br />
+
+    <form id="newUserForm">
+        <input type="email" class="email" placeholder="email" value="admin@tetimiki.hu">
+        <input type="name" class="name" placeholder="name" value="admin">
+        <input type="password" class="password" placeholder="Password" value="Sorelle">
+        <button type="submit">Add new user</button>
+    </form>
+
+    <br />
+
+    <button id="getNotes">Get notes</button>
+
+    <br />
+
+    <form id="newNoteForm">
+        <input type="name" class="name" placeholder="name" value="Welcome">
+        <button type="submit">Add new note</button>
+    </form>
+
+    <br />
+
+    <form id="getNoteForm">
+        <input type="number" class="id" placeholder="1..." value="1">
+        <button type="submit">Get note</button>
+    </form>
+
+    <br />
+
+    <form id="updateNoteForm">
+        <input type="number" class="id" placeholder="1..." value="1">
+        <input type="text" class="content" placeholder="Some JSON here" value="">
+        <input type="text" class="name" placeholder="Welcome..." value="">
+        <input type="misc" class="misc" placeholder="Some misc JSON here" value="">
+        <button type="submit">Update note</button>
+    </form>
+
+
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        const sendRequest = async (url, body) => {
+            let res = await fetch("http://localhost:3000/" + url, {...body, credentials: 'include'});
+
+            if (res.status === 401 || res.status === 403) {
+                console.log("must log in first...");
+                res = await fetch("http://localhost:3000/login", {
+                    method: 'POST',
+                    body: JSON.stringify({email: document.querySelector('#loginForm .email').value, password: document.querySelector('#loginForm .password').value}),
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include'
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    console.log("Login failed");
+                    return -1;
+                }
+
+                res = await fetch("http://localhost:3000/" + url, {...body, credentials: 'include'});
+            } else if (res.status === 400) {
+                let text = await res.text();
+                console.log(text);
+                output.textContent = text;
+                return -1;
+            }
+
+            return res;
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.querySelector('#loginForm .email').value;
+            const password = document.querySelector('#loginForm .password').value;
+
+            const res = await sendRequest("login", {
+                method: 'POST',
+                body: JSON.stringify({email, password}),
+                headers: {'Content-Type': 'application/json'},
+            });
+
+            const text = await res.text();
+            output.textContent = text;
+        });
+
+        // Get user info (only logged in)
+        document.getElementById('user').addEventListener('click', async () => {
+            const res = await sendRequest('user', {});
+            const text = await res.text();
+            output.textContent = text;
+        });
+
+        // Add user
+        document.getElementById('newUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.querySelector('#newUserForm .email').value;
+            const name = document.querySelector('#newUserForm .name').value;
+            const password = document.querySelector('#newUserForm .password').value;
+
+            const res = await sendRequest('new_user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, name, password}),
+            });
+
+            const text = await res.text();
+            output.textContent = text;
+        });
+
+
+        // Get notes
+        document.getElementById("getNotes").addEventListener("click", async (e) => {
+            e.preventDefault();
+
+            const res = await sendRequest('notes', {});
+
+            const text = await res.text();
+            output.textContent = text;
+        })
+
+        // Add note
+        document.getElementById("newNoteForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.querySelector("#newNoteForm .name").value;
+
+            const res = await sendRequest('new_note', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name})
+            });
+
+            const text = await res.text();
+            output.textContent = text;
+        });
+
+        // Get note
+        document.getElementById("getNoteForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.querySelector("#getNoteForm .id").value;
+
+            const res = await sendRequest('note', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id}),
+            });
+
+            const text = await res.text();
+            output.textContent = text;
+        });
+
+        // Update a note
+        document.getElementById("updateNoteForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.querySelector("#updateNoteForm .id").value;
+            const content = document.querySelector("#updateNoteForm .content").value;
+            const name = document.querySelector("#updateNoteForm .name").value;
+            const misc = document.querySelector("#updateNoteForm .misc").value;
+
+            let changes = {};
+            if (content) changes.content = content;
+            if (name) changes.name = name;
+            if (misc) changes.misc = misc;
+
+            const res = await sendRequest('update_note', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id, ...changes}),
+            });
+
+            const text = await res.text();
+            output.textContent = text;
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "express-sqlite-sanitized-sessions",
+  "version": "1.0.0",
+  "description": "Express + SQLite example with sanitized queries and sessions",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "connect-sqlite3": "^0.9.0",
+    "better-sqlite3": "^12.4.1"
+  }
+}
