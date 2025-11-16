@@ -3,6 +3,7 @@ const cors = require('cors');
 const Database = require("better-sqlite3");
 const session = require("express-session");
 const SQLiteStore = require('connect-sqlite3')(session);
+const bcrypt = require("bcrypt");
 require('dotenv').config();
 
 const app = express();
@@ -49,14 +50,15 @@ app.get("/", (req, res) => {
     res.json({ welcomeMessage: "Hello world!" });
 });
 
-app.post("/new_user", (req, res) => {
+app.post("/new_user", async (req, res) => {
     const { email, name, password } = req.body;
     if (email == undefined) return res.status(400).send('Email is required');
     if (name == undefined) return res.status(400).send('Name is required');
     if (password == undefined) return res.status(400).send('Password is required');
+    const hashed = await bcrypt.hash(password, 12);
 
     try {
-        db.prepare("INSERT INTO users (email, name, password) VALUES (?, ?, ?)").run(email, name, password);
+        db.prepare("INSERT INTO users (email, name, password) VALUES (?, ?, ?)").run(email, name, hashed);
     } catch (e) {
         if (e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             res.status(400).send('Email already exists');
@@ -67,14 +69,14 @@ app.post("/new_user", (req, res) => {
     res.status(200).send("User added");
 })
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (email == undefined) return res.status(400).send('Email is required.');
     if (password == undefined) return res.status(400).send('Password is required.');
     const user = db.prepare("SELECT id, password FROM users WHERE email = ?").get(email);
 
     if (!user) return res.status(401).send('User not found');
-    if (user.password !== password) return res.status(401).send('Wrong password');
+    if (!await bcrypt.compare(password, user.password)) return res.status(401).send('Wrong password');
 
     // Store user info in session
     req.session.userId = user.id;
@@ -83,7 +85,7 @@ app.post('/login', (req, res) => {
 
 app.get("/user", (req, res) => {
     if (!req.session.userId) return res.status(401).send('Not logged in');
-    res.json(db.prepare("SELECT * FROM users WHERE id = ?").get(req.session.userId));
+    res.json(db.prepare("SELECT id, email, name, misc FROM users WHERE id = ?").get(req.session.userId));
 });
 
 app.get("/notes", (req, res) => {
@@ -112,7 +114,7 @@ app.post("/new_note", (req, res) => {
     const alreadyExists = db.prepare("SELECT name FROM notes WHERE user_id = ? AND name = ?").get(req.session.userId, name);
     if (alreadyExists) return res.status(400).send("File already exists");
 
-    const note = db.prepare("INSERT INTO notes (name, url, user_id) VALUES (?, ?, ?)").run(name, generateNewUrl('notes'), req.session.userId);
+    const note = db.prepare("INSERT INTO notes (name, url, user_id, content) VALUES (?, ?, ?, ?)").run(name, generateNewUrl('notes'), req.session.userId, JSON.stringify([]));
     res.json({ id: note.lastInsertRowid });
 });
 
