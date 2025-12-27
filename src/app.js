@@ -31,7 +31,8 @@ app.use(
     })
 );
 
-const db = new Database("data/derive.sqlite");
+const db = new Database("data/bluebook.sqlite");
+console.log("Connected to db: ", db);
 
 const generateNewUrl = (table) => {
     let abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -121,7 +122,7 @@ app.post("/new_note", (req, res) => {
 app.post("/update_note", (req, res) => {
     if (!req.session.userId) return res.status(401).send('Not logged in');
 
-    const { content, name, misc, id } = req.body;
+    let { content, name, misc, id } = req.body;
     if (id == undefined) return res.status(400).send('Id is required.');
 
     const note = db.prepare("SELECT user_id FROM notes WHERE id = ?").get(id);
@@ -131,7 +132,11 @@ app.post("/update_note", (req, res) => {
     try {
         if (content) db.prepare("UPDATE notes SET content = ? WHERE id = ?").run(content, id);
         if (name) db.prepare("UPDATE notes SET name = ? WHERE id = ?").run(name, id);
-        if (misc) db.prepare("UPDATE notes SET misc = ? WHERE id = ?").run(misc, id);
+        if (misc) {
+            const currentMisc = db.prepare("SELECT misc FROM notes WHERE id = ?").get(id);
+            misc = { ...currentMisc, ...misc };
+            db.prepare("UPDATE notes SET misc = ? WHERE id = ?").run(misc, id);
+        }
     } catch (e) {
         return res.status(400).send("Something went wrong");
     }

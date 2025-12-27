@@ -1,8 +1,8 @@
 services:
-  derive:
+  bluebook:
     build: .
-    image: derive
-    container_name: derive
+    image: bluebook
+    container_name: BlueBook
     ports:
       - "${PORT}:3000"
     volumes:
