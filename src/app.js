@@ -112,8 +112,8 @@ app.post("/new_note", (req, res) => {
 
     const { name } = req.body;
     if (name == undefined) return res.status(400).send('Name is required');
-    const alreadyExists = db.prepare("SELECT name FROM notes WHERE user_id = ? AND name = ?").get(req.session.userId, name);
-    if (alreadyExists) return res.status(400).send("File already exists");
+    // const alreadyExists = db.prepare("SELECT name FROM notes WHERE user_id = ? AND name = ?").get(req.session.userId, name);
+    // if (alreadyExists) return res.status(400).send("File already exists");
 
     const note = db.prepare("INSERT INTO notes (name, url, user_id, content) VALUES (?, ?, ?, ?)").run(name, generateNewUrl('notes'), req.session.userId, JSON.stringify([]));
     res.json({ id: note.lastInsertRowid });
@@ -133,8 +133,8 @@ app.post("/update_note", (req, res) => {
         if (content) db.prepare("UPDATE notes SET content = ? WHERE id = ?").run(content, id);
         if (name) db.prepare("UPDATE notes SET name = ? WHERE id = ?").run(name, id);
         if (misc) {
-            const currentMisc = db.prepare("SELECT misc FROM notes WHERE id = ?").get(id);
-            misc = { ...currentMisc, ...misc };
+            const currentMisc = db.prepare("SELECT misc FROM notes WHERE id = ?").get(id).misc;
+            misc = JSON.stringify({ ...JSON.parse(currentMisc), ...JSON.parse(misc) });
             db.prepare("UPDATE notes SET misc = ? WHERE id = ?").run(misc, id);
         }
     } catch (e) {
