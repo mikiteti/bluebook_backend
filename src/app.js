@@ -4,6 +4,7 @@ const Database = require("better-sqlite3");
 const session = require("express-session");
 const SQLiteStore = require('connect-sqlite3')(session);
 const bcrypt = require("bcrypt");
+const { spawn } = require("node:child_process");
 require('dotenv').config();
 
 const app = express();
@@ -11,6 +12,17 @@ app.use(cors({
     origin: process.env.ALLOW,
     credentials: true
 }));
+// app.use(cors({
+//     origin: (origin, callback) => {
+//         if (!origin) return callback(null, true);
+//
+//         if (origin === process.env.ALLOW) return callback(null, true);
+//         if (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) return callback(null, true);
+//
+//         return callback(new Error("Not allowed by CORS"));
+//     },
+//     credentials: true
+// }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -107,6 +119,16 @@ app.post("/note", (req, res) => {
     res.json(note);
 });
 
+app.post("/note_by_url", (req, res) => {
+    const { url } = req.body;
+    if (url == undefined) return res.status(400).send('Url is required');
+
+    const note = db.prepare("SELECT * FROM notes WHERE url = ?").get(url);
+    if (note == undefined) return res.status(400).send('Note not found');
+
+    res.json(note);
+});
+
 app.post("/new_note", (req, res) => {
     if (!req.session.userId) return res.status(401).send('Not logged in');
 
@@ -143,3 +165,20 @@ app.post("/update_note", (req, res) => {
 
     res.send("Note updated");
 });
+
+// app.post("/convert/pdf", express.raw({ type: "*/*", limit: "10mb" }), (req, res) => {
+//     console.log("converting to pdf");
+//     res.setHeader("Content-Type", "application/pdf");
+//
+//     const pandoc = spawn("pandoc", [
+//         "-f", "markdown",
+//         "-t", "pdf",
+//         // "--include-in-header=/opt/pandoc/preamble.tex",
+//         "-o", "-"
+//     ]);
+//
+//     req.pipe(pandoc.stdin);
+//     pandoc.stdout.pipe(res);
+//
+//     pandoc.stderr.on("data", d => console.error(d.toString()));
+// });

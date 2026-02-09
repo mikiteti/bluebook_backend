@@ -1,6 +1,8 @@
 services:
   bluebook:
-    build: .
+    build:
+      context: .
+      network: host
     image: bluebook
     container_name: BlueBook
     ports:
