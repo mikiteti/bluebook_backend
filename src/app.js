@@ -275,7 +275,7 @@ app.get("/proxy-image", async (req, res) => {
         let url = req.query.url;
         if (!url) return res.status(400).send("Missing URL");
         const Url = new URL(url, `http://${req.headers.host}`);
-        if (Url.host == process.env.SELF) url = "http://127.0.0.1:" + process.env.PORT + Url.pathname;
+        if (Url.host == process.env.SELF) url = "http://127.0.0.1:3000" + Url.pathname;
 
         const response = await fetch(url);
         if (!response.ok) return res.status(response.status).send("Failed to fetch image");
