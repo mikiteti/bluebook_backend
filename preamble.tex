@@ -1,0 +1,383 @@
+%=========================================================
+% Encoding, language, fonts (pdfLaTeX)
+%=========================================================
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+% \usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[most]{tcolorbox}
+
+
+\usepackage{titling}
+
+\pretitle{\begin{center}\LARGE\bfseries\color{ink}}
+\posttitle{\par\end{center}\vspace{-0.4em}}
+
+
+% If you ever switch to XeLaTeX or LuaLaTeX, comment the 4 lines
+% above and UNcomment the block below and change compiler in Overleaf.
+% (Use % at the start of each line, NOT /* ... */.)
+%
+% \usepackage{fontspec}
+% \defaultfontfeatures{Ligatures=TeX}
+% \setmainfont{Latin Modern Roman}
+% \setsansfont{Latin Modern Sans}
+% \setmonofont{Latin Modern Mono}
+
+%=========================================================
+% Page layout and spacing
+%=========================================================
+\usepackage[a4paper,
+            margin=2.5cm,
+            headheight=16pt,
+            includeheadfoot]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.05}
+
+\usepackage{parskip}  % no indent, space between paragraphs
+% If you prefer indents, comment the previous line and instead:
+% \usepackage{indentfirst}
+% \setlength{\parindent}{1.2em}
+% \setlength{\parskip}{0pt}
+
+%=========================================================
+% Colors — “Warm paper + ink + accents”
+% (balanced, not blue-dominant; good for physics solutions)
+%=========================================================
+\usepackage{xcolor}
+
+% % Base (page + text)
+% \definecolor{paper}{HTML}{FCF7EF}   % warm paper
+% \definecolor{ink}{HTML}{1F2428}     % near-black
+% \definecolor{rule}{HTML}{D6D0C7}    % borders/rules
+%
+% % Accents (use consistently)
+% \definecolor{navy}{HTML}{2B3A67}    % deep slate-navy (links/refs)
+% \definecolor{teal}{HTML}{0F766E}    % definitions/notes
+% \definecolor{violet}{HTML}{6D28D9}  % lemmas/claims
+% \definecolor{amber}{HTML}{B45309}   % important/warnings
+% \definecolor{rose}{HTML}{BE123C}    % contradictions/errors
+% \definecolor{green}{HTML}{15803D}   % final results
+
+\definecolor{paper}{HTML}{FFFFFF}
+\definecolor{ink}{HTML}{111827}
+\definecolor{rule}{HTML}{D1D5DB}
+\definecolor{navy}{HTML}{1E3A8A}
+\definecolor{teal}{HTML}{0F766E}
+\definecolor{violet}{HTML}{7C3AED}
+\definecolor{amber}{HTML}{92400E}
+\definecolor{rose}{HTML}{9F1239}
+\definecolor{green}{HTML}{166534}
+
+\pagecolor{paper}
+
+%---------------------------------------------------------
+% Map to your existing names so the rest of the preamble
+% keeps working without changes
+%---------------------------------------------------------
+\colorlet{mybg}{paper}
+\colorlet{mygray}{ink}
+\colorlet{mylightgray}{rule}
+\colorlet{myblue}{navy} % (kept only as a compatibility alias)
+
+%=========================================================
+% box (keep EXACT colors as requested)
+
+\definecolor{answerframe}{HTML}{2F6FDB}
+\definecolor{answerback}{HTML}{EAF2FF}
+
+\newtcolorbox{answerbox}[1][]{
+  enhanced,
+  breakable,
+  colback=answerback,
+  colframe=answerframe,
+  boxrule=0.8pt,
+  arc=2pt,
+  left=6pt,
+  right=6pt,
+  top=6pt,
+  bottom=6pt,
+  halign=center,   % horizontal centering
+  valign=center,   % vertical centering (effective if you set a height)
+  #1
+}
+
+
+
+
+%=========================================================
+% Griffiths-style note-taking boxes (using your palette)
+% Functions: definition, example, derivation, result, pitfall, note
+%=========================================================
+
+%=========================================================
+% Theorem tcolorbox (preamble)
+% Uses your palette: paper/ink/rule/navy/violet
+% Requires: \usepackage[most]{tcolorbox}
+%=========================================================
+\tcbset{
+  theoremstyle/.style={
+    enhanced,
+    breakable,
+    coltext=ink,
+    boxrule=0.7pt,
+    arc=2pt,
+    left=6pt,right=6pt,top=6pt,bottom=6pt,
+    before skip=10pt, after skip=10pt,
+    fonttitle=\bfseries,
+    coltitle=ink,
+    attach title to upper=\quad,
+  }
+}
+
+\newtcbtheorem[number within=section]{theorembox}{Theorem}{
+  theoremstyle,
+  colframe=violet,
+  colback=violet!5,
+}{thm}
+
+
+
+% Global defaults for all tcolorboxes below (NOT answerbox)
+\tcbset{
+  enhanced,
+  breakable,
+  coltext=ink,
+  boxrule=0.7pt,
+  arc=2pt,
+  left=6pt,right=6pt,top=6pt,bottom=6pt,
+  before skip=10pt, after skip=10pt
+}
+
+% Numbered theorem-like boxes (titles + clean frames)
+\newtcbtheorem[number within=section]{definitionbox}{Definition}{
+  colframe=teal,
+  colback=teal!6,
+  fonttitle=\bfseries,
+  coltitle=ink,
+  attach title to upper=\quad,
+}{def}
+
+\newtcbtheorem[number within=section]{examplebox}{Example}{
+  colframe=violet,
+  colback=violet!6,
+  fonttitle=\bfseries,
+  coltitle=ink,
+  attach title to upper=\quad,
+}{ex}
+
+\newtcbtheorem[number within=section]{derivationbox}{Derivation}{
+  colframe=navy,
+  colback=navy!5,
+  fonttitle=\bfseries,
+  coltitle=ink,
+  attach title to upper=\quad,
+}{der}
+
+\newtcbtheorem[number within=section]{resultbox}{Result}{
+  colframe=green,
+  colback=green!6,
+  fonttitle=\bfseries,
+  coltitle=ink,
+  attach title to upper=\quad,
+}{res}
+
+\newtcbtheorem[number within=section]{pitfallbox}{Common pitfall}{
+  colframe=amber,
+  colback=amber!7,
+  fonttitle=\bfseries,
+  coltitle=ink,
+  attach title to upper=\quad,
+}{pit}
+
+% Unnumbered quick note box
+\newtcolorbox{notebox}[1][]{%
+  enhanced,
+  breakable,
+  colframe=rule,
+  colback=paper,
+  coltext=ink,
+  title=\textbf{Note},
+  fonttitle=\bfseries,
+  coltitle=ink,
+  boxrule=0.7pt,
+  arc=2pt,
+  left=6pt,right=6pt,top=6pt,bottom=6pt,
+  before skip=10pt, after skip=10pt,
+  #1
+}
+
+% Convenience wrappers (short names you can type quickly)
+% Usage examples:
+%   \begin{definition}...\end{definition}
+%   \begin{definition}[Gauss law]...\end{definition}
+\newenvironment{definition}[1][]{\begin{definitionbox}{#1}{} }{\end{definitionbox}}
+\newenvironment{example}[1][]{\begin{examplebox}{#1}{} }{\end{examplebox}}
+\newenvironment{derivation}[1][]{\begin{derivationbox}{#1}{} }{\end{derivationbox}}
+\newenvironment{result}[1][]{\begin{resultbox}{#1}{} }{\end{resultbox}}
+\newenvironment{pitfall}[1][]{\begin{pitfallbox}{#1}{} }{\end{pitfallbox}}
+\newenvironment{note}[1][]{\begin{notebox}[title=\textbf{Note}\if\relax\detokenize{#1}\relax\else\space(#1)\fi]}{\end{notebox}}
+
+%=========================================================
+% Mathematics
+%=========================================================
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{physics}
+\usepackage{siunitx}
+\sisetup{
+  detect-all,
+  per-mode=symbol,
+  separate-uncertainty = true,
+  exponent-product = \cdot
+}
+\usepackage{icomma}
+\usepackage{cancel}
+
+%=========================================================
+% Theorem-like environments
+%=========================================================
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definitionthm}[theorem]{Definition}
+\newtheorem{examplethm}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+%=========================================================
+% Figures, tables, graphics
+%=========================================================
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  labelsep=period
+}
+
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+
+%=========================================================
+% TikZ and drawing
+%=========================================================
+\usepackage{tikz}
+\usetikzlibrary{
+  calc,
+  arrows.meta,
+  decorations.pathmorphing,
+  patterns,
+  angles,
+  quotes,
+  positioning
+}
+
+%=========================================================
+% Lists
+%=========================================================
+\usepackage{enumitem}
+\setlist{
+  topsep=2pt,
+  itemsep=2pt,
+  parsep=0pt
+}
+
+%=========================================================
+% Hyperlinks and clever references
+%=========================================================
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks = true,
+  linkcolor  = navy,
+  citecolor  = navy,
+  urlcolor   = navy,
+}
+
+\usepackage[capitalise,noabbrev]{cleveref}
+
+%=========================================================
+% Quotations and bibliography (optional)
+%=========================================================
+\usepackage{csquotes}
+
+% Comment out this whole block if you are not using biblatex/biber.
+\usepackage[
+  backend=biber,
+  style=authoryear,
+  sorting=nyt,
+  giveninits=true,
+  maxbibnames=6
+]{biblatex}
+\addbibresource{references.bib}
+
+%=========================================================
+% Header, footer, page style  (Page X of Y + top line)
+%=========================================================
+\usepackage{fancyhdr}
+\usepackage{lastpage} % <-- add this
+
+\pagestyle{fancy}
+\fancyhf{}
+
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small\nouppercase{\rightmark}}
+
+% <-- change this line:
+\fancyfoot[C]{\small Page \thepage\ of \pageref{LastPage}}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{%
+  \color{mylightgray}\leaders\hrule height \headrulewidth\hfill}}
+
+% <-- change these:
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\footrule}{\hbox to\headwidth{%
+  \color{mylightgray}\leaders\hrule height \footrulewidth\hfill}}
+
+
+%=========================================================
+% Section title formatting
+%=========================================================
+\usepackage{titlesec}
+
+\titleformat{\section}
+  {\large\bfseries\color{navy}}
+  {\thesection}{0.75em}{}
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{teal}}
+  {\thesubsection}{0.75em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{ink}}
+  {\thesubsubsection}{0.75em}{}
+
+\titlespacing*{\section}{0pt}{*3}{*1.5}
+\titlespacing*{\subsection}{0pt}{*2}{*1}
+\titlespacing*{\subsubsection}{0pt}{*1.5}{*0.75}
+
+%=========================================================
+% Elegant page border
+%=========================================================
+\usepackage{eso-pic}
+
+\AddToShipoutPictureBG{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \draw[mylightgray, line width=0.7pt]
+      ($(current page.north west) + (1.2cm,-1.2cm)$)
+      rectangle
+      ($(current page.south east) + (-1.2cm,1.2cm)$);
+  \end{tikzpicture}
+}

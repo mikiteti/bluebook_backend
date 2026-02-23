@@ -183,6 +183,91 @@ app.post("/update_note", (req, res) => {
 //     pandoc.stderr.on("data", d => console.error(d.toString()));
 // });
 
+app.get("/attachments", (req, res) => {
+    if (!req.session.userId) return res.status(401).send('Not logged in');
+    const attachments = db.prepare("SELECT id, url, user_id, type, misc FROM attachments WHERE user_id = ?").all(req.session.userId);
+    res.json(attachments);
+});
+
+app.post("/attachment/meta", (req, res) => { // used when listing attachments (together with view)
+    const { url } = req.body;
+    if (url == undefined) return res.status(400).send('Url is required');
+
+    const attachment = db.prepare("SELECT id, url, user_id, type, created, misc FROM attachments WHERE url = ?").get(url);
+    if (attachment == undefined) return res.status(400).send('Attachment not found');
+
+    res.json(attachment);
+});
+
+app.post("/attachment/content", (req, res) => { // used before editing an attachment
+    const { url } = req.body;
+    if (url == undefined) return res.status(400).send('Url is required');
+
+    const attachment = db.prepare("SELECT id, url, user_id, type, created, misc, content FROM attachments WHERE url = ?").get(url);
+    if (attachment == undefined) return res.status(404).send('Attachment not found');
+
+    console.log({ attachment });
+    res.json(attachment);
+});
+
+app.post("/attachment/all", (req, res) => { // just for the sake of completeness
+    const { url } = req.body;
+    if (url == undefined) return res.status(400).send('Url is required');
+
+    const attachment = db.prepare("SELECT * FROM attachments WHERE url = ?").get(url);
+    if (attachment == undefined) return res.status(400).send('Attachment not found');
+
+    res.json(attachment);
+});
+
+app.post("/new_attachment", (req, res) => {
+    if (!req.session.userId) return res.status(401).send('Not logged in');
+
+    let { type } = req.body;
+    if (type == undefined) return res.status(400).send('Type is required.');
+    if (!["graph", "geometry", "sketch"].includes(type)) return res.status(400).send('Type needs to be graph, geometry or sketch.');
+
+    const url = generateNewUrl('attachments');
+    const attachment = db.prepare("INSERT INTO attachments (url, user_id, type, preview, content) VALUES (?, ?, ?, ?, ?)").run(url, req.session.userId, type, "", JSON.stringify([]));
+    res.json({ url });
+});
+
+app.post("/update_attachment", (req, res) => {
+    if (!req.session.userId) return res.status(401).send('Not logged in');
+
+    let { content, preview, misc, url } = req.body;
+    if (url == undefined) return res.status(400).send('Url is required.');
+
+    const attachment = db.prepare("SELECT user_id FROM attachments WHERE url = ?").get(url);
+    if (attachment == undefined) return res.status(400).send("Attachment doesn't exist");
+    if (attachment.user_id !== req.session.userId) return res.status(403).send("Not your attachment");
+
+    try {
+        if (content) db.prepare("UPDATE attachments SET content = ? WHERE url = ?").run(content, url);
+        if (preview) db.prepare("UPDATE attachments SET preview = ? WHERE url = ?").run(preview, url);
+        if (misc) {
+            const currentMisc = db.prepare("SELECT misc FROM attachments WHERE url = ?").get(url).misc;
+            misc = JSON.stringify({ ...JSON.parse(currentMisc), ...JSON.parse(misc) });
+            db.prepare("UPDATE attachments SET misc = ? WHERE url = ?").run(misc, url);
+        }
+    } catch (e) {
+        return res.status(400).send("Something went wrong");
+    }
+
+    res.send("Attachment updated");
+});
+
+app.get("/view/:url", (req, res) => { // view attachment -- get so that it can be src in <img>s
+    const url = req.params.url;
+    if (!url) return res.status(400).send("Missing URL");
+
+    const attachment = db.prepare("SELECT preview FROM attachments WHERE url = ?").get(url);
+    if (attachment == undefined) return res.status(404).send('Attachment not found');
+
+    res.type("image/svg+xml");
+    res.send(attachment.preview);
+});
+
 
 // Proxy endpoint
 app.get("/proxy-image", async (req, res) => {
@@ -203,3 +288,4 @@ app.get("/proxy-image", async (req, res) => {
         res.status(500).send("Error fetching image");
     }
 });
+

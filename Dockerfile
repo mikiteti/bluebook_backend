@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm install
+RUN apk add --no-cache sqlite sqlite-libs
 
 COPY . .
 
