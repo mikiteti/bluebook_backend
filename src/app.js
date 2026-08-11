@@ -134,10 +134,12 @@ app.post("/new_note", (req, res) => {
 
     const { name } = req.body;
     if (name == undefined) return res.status(400).send('Name is required');
+    if (name.endsWith("/")) return res.status(400).send('Name can not end in "/"');
     // const alreadyExists = db.prepare("SELECT name FROM notes WHERE user_id = ? AND name = ?").get(req.session.userId, name);
     // if (alreadyExists) return res.status(400).send("File already exists");
 
-    const note = db.prepare("INSERT INTO notes (name, url, user_id, content) VALUES (?, ?, ?, ?)").run(name, generateNewUrl('notes'), req.session.userId, JSON.stringify([]));
+    const note = db.prepare("INSERT INTO notes (name, url, user_id, content, misc) VALUES (?, ?, ?, ?, ?)")
+        .run(name, generateNewUrl('notes'), req.session.userId, JSON.stringify([]), JSON.stringify({ created: Date.now() }));
     res.json({ id: note.lastInsertRowid });
 });
 
