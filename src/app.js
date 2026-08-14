@@ -519,3 +519,29 @@ app.get("/proxy-image", async (req, res) => {
         res.status(500).send("Error fetching image");
     }
 });
+
+// Pandoc endpoint
+app.post("/compile", async (req, res) => {
+    try {
+        let { id, markdown } = req.body
+        console.log(id, markdown);
+        const response = await fetch("http://pandoc:3000/compile", {
+            method: "POST",
+            body: JSON.stringify({ id, markdown })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+
+            return res.status(500).send(error);
+        }
+
+        const pdf = Buffer.from(await response.arrayBuffer());
+
+        res.type("application/pdf");
+        res.send(pdf);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("PDF compilation failed");
+    }
+});

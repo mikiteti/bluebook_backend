@@ -10,5 +10,14 @@ services:
       - ./src:/app/src
     restart: unless-stopped
 
+  pandoc:
+    platform: linux/amd64
+    build: 
+      context: ./pandoc
+    image: pandoc
+    container_name: Pandoc
+    volumes:
+      - ./pandoc/src:/app/src
+
 volumes:
   data:

@@ -11,5 +11,11 @@ services:
       - data:/app/data
     restart: unless-stopped
 
+  pandoc:
+    build: 
+      context: ./pandoc
+    image: pandoc
+    container_name: Pandoc
+
 volumes:
   data:
