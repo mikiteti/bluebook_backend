@@ -15,18 +15,6 @@ app.use(cors({
     credentials: true
 }));
 
-// app.use(cors({
-//     origin: (origin, callback) => {
-//         if (!origin) return callback(null, true);
-//
-//         if (origin === process.env.ALLOW) return callback(null, true);
-//         if (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) return callback(null, true);
-//
-//         return callback(new Error("Not allowed by CORS"));
-//     },
-//     credentials: true
-// }));
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
@@ -225,23 +213,28 @@ app.post("/note_by_url", async (req, res) => {
 app.post("/new_note", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
-    const { name } = req.body;
+    let { name, url } = req.body;
 
     if (name == undefined) return res.status(400).send("Name is required");
     if (name.endsWith("/")) return res.status(400).send('Name can not end in "/"');
 
-    const url = await generateNewUrl("notes");
+    if (url == undefined) url = await generateNewUrl("notes");
 
-    const note = await dbRun(
-        "INSERT INTO notes (name, url, user_id, content, misc) VALUES (?, ?, ?, ?, ?)",
-        [
-            name,
-            url,
-            req.session.userId,
-            JSON.stringify([]),
-            JSON.stringify({ created: Date.now() })
-        ]
-    );
+    let note;
+    try {
+        note = await dbRun(
+            "INSERT INTO notes (name, url, user_id, content, misc) VALUES (?, ?, ?, ?, ?)",
+            [
+                name,
+                url,
+                req.session.userId,
+                JSON.stringify([]),
+                JSON.stringify({ created: Date.now() })
+            ]
+        );
+    } catch (e) {
+        return res.status(400).send("Something went wrong"); // url not unique
+    }
 
     res.json({ id: note.lastInsertRowid });
 });
@@ -302,23 +295,6 @@ app.post("/update_note", async (req, res) => {
     res.send("Note updated");
 });
 
-// app.post("/convert/pdf", express.raw({ type: "*/*", limit: "10mb" }), (req, res) => {
-//     console.log("converting to pdf");
-//     res.setHeader("Content-Type", "application/pdf");
-//
-//     const pandoc = spawn("pandoc", [
-//         "-f", "markdown",
-//         "-t", "pdf",
-//         // "--include-in-header=/opt/pandoc/preamble.tex",
-//         "-o", "-"
-//     ]);
-//
-//     req.pipe(pandoc.stdin);
-//     pandoc.stdout.pipe(res);
-//
-//     pandoc.stderr.on("data", d => console.error(d.toString()));
-// });
-
 app.get("/attachments", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
@@ -361,7 +337,6 @@ app.post("/attachment/content", async (req, res) => {
         return res.status(404).send("Attachment not found");
     }
 
-    console.log({ attachment });
     res.json(attachment);
 });
 
@@ -385,28 +360,30 @@ app.post("/attachment/all", async (req, res) => {
 app.post("/new_attachment", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
-    const { type } = req.body;
+    let { type, url } = req.body;
 
     if (type == undefined) return res.status(400).send("Type is required.");
 
     if (!["graph", "geometry", "sketch"].includes(type)) {
-        return res.status(400).send(
-            "Type needs to be graph, geometry or sketch."
-        );
+        return res.status(400).send("Type needs to be graph, geometry or sketch.");
     }
 
-    const url = await generateNewUrl("attachments");
+    if (url == undefined) url = await generateNewUrl("attachments");
 
-    await dbRun(
-        "INSERT INTO attachments (url, user_id, type, preview, content) VALUES (?, ?, ?, ?, ?)",
-        [
-            url,
-            req.session.userId,
-            type,
-            "",
-            JSON.stringify([])
-        ]
-    );
+    try {
+        await dbRun(
+            "INSERT INTO attachments (url, user_id, type, preview, content) VALUES (?, ?, ?, ?, ?)",
+            [
+                url,
+                req.session.userId,
+                type,
+                "",
+                JSON.stringify([])
+            ]
+        );
+    } catch (e) {
+        res.status(400).send("Something went wrong"); // url not unique
+    }
 
     res.json({ url });
 });
@@ -524,7 +501,6 @@ app.get("/proxy-image", async (req, res) => {
 app.post("/compile", async (req, res) => {
     try {
         let { id, markdown } = req.body
-        console.log(id, markdown);
         const response = await fetch("http://pandoc:3000/compile", {
             method: "POST",
             body: JSON.stringify({ id, markdown })

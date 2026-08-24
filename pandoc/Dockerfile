@@ -7,7 +7,7 @@ RUN apt-get update && \
 RUN tlmgr update --self && \
     tlmgr install algorithm2e enumitem mdframed physics siunitx svg xcharter \
     stmaryrd ifoddpage relsize zref needspace transparent lastpage xkeyval \
-    xstring fontaxes catchfile stmaryrd
+    xstring fontaxes catchfile stmaryrd siunitx
 
 WORKDIR /app
 
