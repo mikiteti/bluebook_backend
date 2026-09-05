@@ -4,8 +4,10 @@ const sqlite3 = require("sqlite3").verbose();
 const session = require("express-session");
 const SQLiteStore = require("connect-sqlite3")(session);
 const bcrypt = require("bcrypt");
-const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
+const multer = require("multer");
+const fs = require("node:fs/promises");
+const path = require("node:path");
 require("dotenv").config();
 
 const app = express();
@@ -446,13 +448,38 @@ app.post("/attachment/update", async (req, res) => {
     res.send("Attachment updated");
 });
 
+app.get("/attachment/isExternal/:url", async (req, res) => {
+    const url = req.params.url;
+
+    const attachment = await dbGet(
+        "SELECT type FROM attachments WHERE url = ?",
+        [url]
+    );
+
+    if (attachment == undefined) {
+        return res.status(400).send("Attachment not found");
+    }
+
+    let external = attachment.type.includes("/");
+    res.json({ external });
+});
+
+const imageDir = path.join(process.cwd(), "data", "images");
+const allowedTypes = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+    "application/pdf": ".pdf",
+};
 app.get("/view/:url", async (req, res) => {
     const url = req.params.url;
 
     if (!url) return res.status(400).send("Missing URL");
 
     const attachment = await dbGet(
-        "SELECT preview FROM attachments WHERE url = ?",
+        "SELECT preview, url, type FROM attachments WHERE url = ?",
         [url]
     );
 
@@ -460,9 +487,100 @@ app.get("/view/:url", async (req, res) => {
         return res.status(404).send("Attachment not found");
     }
 
-    res.type("image/svg+xml");
-    res.send(attachment.preview);
+    if (!attachment.type.includes("/")) { // attachment made in bluebook
+        res.type("image/svg+xml");
+        res.send(attachment.preview);
+    } else { // attachment imported from elsewhere
+        const filename = `${attachment.url}${allowedTypes[attachment.type]}`;
+        const filePath = path.join(imageDir, filename);
+
+        try {
+            await fs.access(filePath);
+
+            res.type(attachment.type);
+            res.sendFile(filePath);
+        } catch (err) {
+            console.error(err);
+            res.status(404).send("Attachment file not found");
+        }
+    }
 });
+
+// Image uploads
+const initExternalAttachments = async () => {
+    await fs.mkdir(imageDir, { recursive: true });
+    const upload = multer({
+        storage: multer.memoryStorage(),
+        limits: {
+            fileSize: 10 * 1024 * 1024, // 10 MB
+        },
+        fileFilter(req, file, cb) {
+            if (!(file.mimetype in allowedTypes)) {
+                return cb(new Error("Unsupported file type"));
+            }
+
+            cb(null, true);
+        },
+    });
+
+    app.post("/attachment/upload", upload.single("file"), async (req, res) => {
+        if (!req.session.userId) return res.status(401).send("Not logged in");
+
+        if (!req.file) {
+            return res.status(400).json({
+                error: "No image supplied",
+            });
+        }
+
+        const url = await generateNewUrl("attachments");
+        let { name } = JSON.parse(req.body.metadata || "{}");
+
+        // Don't trust the extension supplied by the client.
+        const ext = allowedTypes[req.file.mimetype];
+
+        if (!ext) {
+            return res.status(400).json({
+                error: "Unsupported image type",
+            });
+        }
+
+        const filename = `${url}${ext}`;
+        const filePath = path.join(imageDir, filename);
+
+        let misc = {
+            size: req.file.size,
+        }
+        if (name) misc.name = name;
+
+        try {
+            await fs.writeFile(filePath, req.file.buffer);
+
+            // Assuming you already have a SQLite connection called db:
+            await dbRun(
+                "INSERT INTO attachments (url, user_id, type, misc) VALUES (?, ?, ?, ?)",
+                [
+                    url,
+                    req.session.userId,
+                    req.file.mimetype,
+                    JSON.stringify(misc),
+                ]
+            );
+
+            res.status(201).json({ url });
+        } catch (err) {
+            // If the DB operation failed after writing the file,
+            // don't leave an orphaned file behind.
+            await fs.unlink(filePath).catch(() => { });
+
+            console.error(err);
+
+            res.status(500).json({
+                error: "Failed to store image",
+            });
+        }
+    });
+}
+initExternalAttachments();
 
 // Proxy endpoint
 app.get("/proxy-image", async (req, res) => {
@@ -521,3 +639,4 @@ app.post("/compile", async (req, res) => {
         res.status(500).send("PDF compilation failed");
     }
 });
+
