@@ -6,9 +6,6 @@ const SQLiteStore = require("connect-sqlite3")(session);
 const bcrypt = require("bcrypt");
 const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
-import multer from "multer";
-import fs from "node:fs/promises";
-import path from "node:path";
 require("dotenv").config();
 
 const app = express();
