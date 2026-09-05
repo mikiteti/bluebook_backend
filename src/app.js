@@ -308,8 +308,8 @@ app.get("/attachment/list", async (req, res) => {
     res.json(attachments);
 });
 
-app.post("/attachment/meta", async (req, res) => {
-    const { url } = req.body;
+app.get("/attachment/meta/:url", async (req, res) => {
+    const url = req.params.url;
 
     if (url == undefined) return res.status(400).send("Url is required");
 
@@ -469,7 +469,7 @@ const allowedTypes = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/gif": ".gif",
-    "image/webp": ".webp",
+    // "image/webp": ".webp", // pandoc can't work with it
     "image/svg+xml": ".svg",
     "application/pdf": ".pdf",
 };
