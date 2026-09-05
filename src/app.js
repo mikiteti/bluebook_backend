@@ -6,6 +6,9 @@ const SQLiteStore = require("connect-sqlite3")(session);
 const bcrypt = require("bcrypt");
 const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
+import multer from "multer";
+import fs from "node:fs/promises";
+import path from "node:path";
 require("dotenv").config();
 
 const app = express();
@@ -78,7 +81,7 @@ const dbRun = (sql, params = []) => {
     });
 };
 
-const generateNewUrl = async (table) => {
+const generateNewUrl = async (table = "attachments") => {
     const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     let url = "";
@@ -106,7 +109,7 @@ app.get("/", (req, res) => {
     res.json({ welcomeMessage: "Hello world!" });
 });
 
-app.post("/new_user", async (req, res) => {
+app.post("/user/new", async (req, res) => {
     const { email, name, password } = req.body;
 
     if (email == undefined) return res.status(400).send("Email is required");
@@ -132,7 +135,7 @@ app.post("/new_user", async (req, res) => {
     res.status(200).send("User added");
 });
 
-app.post("/login", async (req, res) => {
+app.post("/user/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (email == undefined) return res.status(400).send("Email is required.");
@@ -153,7 +156,7 @@ app.post("/login", async (req, res) => {
     res.send("Logged in");
 });
 
-app.get("/user", async (req, res) => {
+app.get("/user/get", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     const user = await dbGet(
@@ -164,7 +167,7 @@ app.get("/user", async (req, res) => {
     res.json(user);
 });
 
-app.get("/notes", async (req, res) => {
+app.get("/note/list", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     const notes = await dbAll(
@@ -175,7 +178,7 @@ app.get("/notes", async (req, res) => {
     res.json(notes);
 });
 
-app.post("/note", async (req, res) => {
+app.post("/note/get", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     const { id } = req.body;
@@ -195,7 +198,7 @@ app.post("/note", async (req, res) => {
     res.json(note);
 });
 
-app.post("/note_by_url", async (req, res) => {
+app.post("/note/get/url", async (req, res) => {
     const { url } = req.body;
 
     if (url == undefined) return res.status(400).send("Url is required");
@@ -210,7 +213,7 @@ app.post("/note_by_url", async (req, res) => {
     res.json(note);
 });
 
-app.post("/new_note", async (req, res) => {
+app.post("/note/new", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     let { name, url } = req.body;
@@ -239,7 +242,7 @@ app.post("/new_note", async (req, res) => {
     res.json({ id: note.lastInsertRowid });
 });
 
-app.post("/update_note", async (req, res) => {
+app.post("/note/update", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     let { content, name, misc, id } = req.body;
@@ -295,7 +298,7 @@ app.post("/update_note", async (req, res) => {
     res.send("Note updated");
 });
 
-app.get("/attachments", async (req, res) => {
+app.get("/attachment/list", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     const attachments = await dbAll(
@@ -340,7 +343,7 @@ app.post("/attachment/content", async (req, res) => {
     res.json(attachment);
 });
 
-app.post("/attachment/all", async (req, res) => {
+app.post("/attachment/get", async (req, res) => {
     const { url } = req.body;
 
     if (url == undefined) return res.status(400).send("Url is required");
@@ -357,7 +360,7 @@ app.post("/attachment/all", async (req, res) => {
     res.json(attachment);
 });
 
-app.post("/new_attachment", async (req, res) => {
+app.post("/attachment/new", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     let { type, url } = req.body;
@@ -388,7 +391,7 @@ app.post("/new_attachment", async (req, res) => {
     res.json({ url });
 });
 
-app.post("/update_attachment", async (req, res) => {
+app.post("/attachment/update", async (req, res) => {
     if (!req.session.userId) return res.status(401).send("Not logged in");
 
     let { content, preview, misc, url } = req.body;
